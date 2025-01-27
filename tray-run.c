@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 #include <gtk/gtk.h>
 
@@ -16,7 +17,18 @@ static void on_tray_icon_click(GtkStatusIcon *, gpointer data)
         return;
     }
     if (pid != 0) {
+        if (waitpid(pid, NULL, 0) == -1) {
+            perror("waitpid");
+        }
         return;
+    }
+    pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+    if (pid != 0) {
+        exit(EXIT_SUCCESS);
     }
     execvp(cmd[0], cmd);
     fprintf(stderr, "execve: '%s': %s\n", cmd[0], strerror(errno));
